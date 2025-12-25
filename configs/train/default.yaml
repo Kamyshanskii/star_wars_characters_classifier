@@ -1,0 +1,24 @@
+device: "auto"
+precision: "32-true"
+batch_size: 16
+lr: 0.0003
+weight_decay: 0.0001
+max_epochs: 10
+log_every_n_steps: 10
+
+early_stopping:
+  enabled: true
+  monitor: "val_acc"
+  mode: "max"
+  patience: 5
+
+checkpoint:
+  enabled: true
+  monitor: "val_acc"
+  mode: "max"
+  save_top_k: 1
+
+augment:
+  enabled: true
+  hflip_p: 0.5
+  color_jitter: 0.2

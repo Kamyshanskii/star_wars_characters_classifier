@@ -1,0 +1,3 @@
+export_onnx_on_fit_end: true
+onnx_path: "artifacts/model.onnx"
+opset: 17

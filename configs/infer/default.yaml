@@ -1,0 +1,2 @@
+onnx_path: "artifacts/model.onnx"
+top_k: 5

@@ -1,0 +1,8 @@
+defaults:
+  - data: star_wars
+  - model: resnet18
+  - train: default
+  - mlflow: local
+  - export: onnx
+  - infer: default
+  - _self_
