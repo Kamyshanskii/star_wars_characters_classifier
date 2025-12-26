@@ -1,5 +1,5 @@
-from PIL import Image
 import numpy as np
+from PIL import Image
 
 from star_wars_characters.utils.images import preprocess_pil, softmax
 

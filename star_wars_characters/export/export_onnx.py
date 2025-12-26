@@ -43,4 +43,6 @@ def export_onnx(
     print(f"[export_onnx] Saved: {onnx_path}")
 
     if mlflow_logger is not None:
-        mlflow_logger.experiment.log_artifact(mlflow_logger.run_id, str(onnx_path), artifact_path="artifacts")
+        mlflow_logger.experiment.log_artifact(
+            mlflow_logger.run_id, str(onnx_path), artifact_path="artifacts"
+        )

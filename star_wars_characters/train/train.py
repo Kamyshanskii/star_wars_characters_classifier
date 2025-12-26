@@ -48,16 +48,16 @@ def train_model(cfg: Any) -> None:
             )
         )
 
+    checkpoint_cb = None
     if bool(cfg.train.checkpoint.enabled):
-        callbacks.append(
-            ModelCheckpoint(
-                dirpath="artifacts/checkpoints",
-                filename="{epoch}-{val_acc:.4f}",
-                monitor=str(cfg.train.checkpoint.monitor),
-                mode=str(cfg.train.checkpoint.mode),
-                save_top_k=int(cfg.train.checkpoint.save_top_k),
-            )
+        checkpoint_cb = ModelCheckpoint(
+            dirpath="artifacts/checkpoints",
+            filename="{epoch}-{val_acc:.4f}",
+            monitor=str(cfg.train.checkpoint.monitor),
+            mode=str(cfg.train.checkpoint.mode),
+            save_top_k=int(cfg.train.checkpoint.save_top_k),
         )
+        callbacks.append(checkpoint_cb)
 
     mlf = MLFlowLogger(
         experiment_name=str(cfg.mlflow.experiment_name),
@@ -79,9 +79,34 @@ def train_model(cfg: Any) -> None:
     trainer.fit(model, datamodule=dm)
 
     for p in Path("plots").glob("*.png"):
-        mlf.experiment.log_artifact(mlf.run_id, str(p), artifact_path="plots")
+        try:
+            mlf.experiment.log_artifact(mlf.run_id, str(p), artifact_path="plots")
+        except Exception as e:
+            print(f"[train] Warning: failed to log plot '{p}' to MLflow: {e}")
 
     if bool(cfg.export.export_onnx_on_fit_end):
-        export_onnx(cfg, label_encoder=dm.label_encoder, mlflow_logger=mlf)
+        best_ckpt = None
+        if checkpoint_cb is not None and checkpoint_cb.best_model_path:
+            best_ckpt = checkpoint_cb.best_model_path
+        else:
+            ckpts = sorted(
+                Path("artifacts/checkpoints").glob("*.ckpt"),
+                key=lambda x: x.stat().st_mtime,
+                reverse=True,
+            )
+            if ckpts:
+                best_ckpt = str(ckpts[0])
+
+        export_onnx(
+            cfg,
+            checkpoint_path=best_ckpt,
+            label_encoder=dm.label_encoder,
+            mlflow_logger=mlf,
+        )
+
+        if best_ckpt:
+            print(f"[train] Exported ONNX from checkpoint: {best_ckpt}")
+        else:
+            print("[train] Exported ONNX from randomly-initialized weights (no checkpoint found).")
 
     print(f"[train] MLflow run_id: {mlf.run_id}")

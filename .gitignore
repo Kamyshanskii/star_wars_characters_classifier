@@ -19,3 +19,4 @@ dvc_remote/
 *.ckpt
 
 .dvc/cache/
+node_modules/

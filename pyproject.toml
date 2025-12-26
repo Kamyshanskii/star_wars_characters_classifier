@@ -2,7 +2,7 @@
 name = "star-wars-character-classifier"
 version = "0.1.0"
 description = "Star Wars character classifier (Lightning + MLflow + DVC + Hydra + ONNX)"
-authors = ["Your Name <you@example.com>"]
+authors = ["kamysh"]
 readme = "README.md"
 packages = [{ include = "star_wars_characters" }]
 

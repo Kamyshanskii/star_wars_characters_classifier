@@ -1,137 +1,163 @@
-# Star Wars Character Classifier
+# StarWarsCharacterClassifier
 
-Image classification project: **predict a Star Wars character** from an input image.
+**Камышанский Андрей**
 
-This repository is structured to satisfy the MLOps course homework requirements:
-- dependencies via **Poetry**
-- code quality via **pre-commit** (pre-commit-hooks, black, isort, flake8, prettier)
-- configs via **Hydra**
-- experiments logging via **MLflow**
-- data and artifacts via **DVC**
-- training via **PyTorch Lightning**
-- production packaging via **ONNX**
-- inference server via **MLflow Serving** (pyfunc wrapper around ONNXRuntime)
+## Постановка задачи
 
-Dataset (Kaggle): `mathurinache/star-wars-images`.
+Задача — по изображению определить персонажа из вселенной Звездных Войн.
+
+В качестве источника данных используется датасет с [Kaggle](https://www.kaggle.com/datasets/mathurinache/star-wars-images/data).
+
+### Формат входных и выходных данных
+
+**Вход:** изображение (`.jpg/.jpeg/.png`).  
+**Выход:** имя класса (персонажа) и top-k вероятностей.
+
+### Метрики
+
+- **Accuracy** на train/val/test
+- **Cross-Entropy Loss** на train/val
+
+Ориентир по качеству: `val_acc` ≈ **0.75+** на baseline (ResNet18).
+
+### Валидация
+
+Данные разбиваются на `train/val/test` в соотношении 80/10/10 с seed = 42.
+### Данные
+
+Датасет: [star-wars-images](https://www.kaggle.com/datasets/mathurinache/star-wars-images/data).  
+После скачивания и подготовки структура такая:
+
+- `data/raw/star_wars_images/<class_name>/*.jpg`
+- `data/splits/train.parquet`, `val.parquet`, `test.parquet`
+- `data/examples/` — несколько изображений для быстрого инференса
+
+---
+
+## Моделирование
+
+### Основная модель
+
+- Архитектура: **ResNet18** (pretrained ImageNet)
+- Обучение: fine-tune (замена “головы” под число классов)
+- Фреймворк: **PyTorch Lightning**
 
 ---
 
 ## Setup
 
-### 1) Requirements
-- Python 3.10+ (recommended 3.11)
-- `git`, `dvc`
-- `docker` (optional, for local MLflow server)
+Разработка и тестирование проводились на Linux с GPU **GTX 1650**.  
+Проект использует **Poetry**. Требуемая версия Python: **>=3.10,<3.13**.
 
-### 2) Install dependencies
+### 1) Клонировать репозиторий
 ```bash
-poetry lock
+git clone <Не забыть встаить ссылку как закину на github>
+cd star_wars_characters
+```
+
+### 2) Python
+```bash
+conda create -n swc_py312 python=3.12 -y
+conda activate swc_py312
+```
+
+### 3) Установить зависимости
+```bash
 poetry install --with train,dev
 ```
 
-### 3) Enable git hooks
+Проверка:
 ```bash
-poetry run pre-commit install
-poetry run pre-commit run -a
+poetry run swc --help
 ```
 
-### 4) MLflow (optional)
-Homework assumes MLflow at `http://127.0.0.1:8080`.
-
-Run locally:
-```bash
-docker compose up -d
-```
-
----
-
-## Data management (DVC)
-
-This project uses DVC to store:
-- `data/` (raw images, fixed splits, examples)
-- `artifacts/` (checkpoints, ONNX)
-
-### Quick start (local DVC remote)
-```bash
-dvc init
-dvc remote add -d local_remote dvc_remote
-```
-
-### Download dataset (Kaggle)
-Put Kaggle creds (`~/.kaggle/kaggle.json`) or set env vars `KAGGLE_USERNAME`, `KAGGLE_KEY`.
+### 4) Kaggle credentials (для скачивания датасета)
+Нужно положить `kaggle.json` в `~/.kaggle/`:
 
 ```bash
-poetry run swc download_data
+mkdir -p ~/.kaggle
+cp ~/Downloads/kaggle.json ~/.kaggle/kaggle.json
+chmod 600 ~/.kaggle/kaggle.json
 ```
 
-### Prepare fixed splits + export examples
-```bash
-poetry run swc prepare_data
-```
-
-Track and push data/artifacts to your DVC remote:
-```bash
-dvc add data
-dvc push
-```
+`kaggle.json` создаётся на странице Kaggle → Settings → API → **Create Legacy API Key**.
 
 ---
 
 ## Train
 
-One command (tries `dvc pull` first; if missing, downloads from Kaggle and prepares splits):
+### 1) Скачать данные и подготовить сплиты
 ```bash
-poetry run swc train
+poetry run swc download_data
+poetry run swc prepare_data
 ```
 
-Override configs via Hydra:
+### 2) Запуск обучения
+
 ```bash
-poetry run swc train train.batch_size=8 train.max_epochs=5 data.image_size=224
+poetry run swc train mlflow.tracking_uri="file:./mlruns" train.device=gpu train.batch_size=8 train.max_epochs=10
 ```
 
-Outputs:
-- MLflow run (metrics + params + artifacts)
-- plots in `plots/` (**at least 3 curves**)
-- checkpoints in `artifacts/checkpoints/`
-- ONNX in `artifacts/model.onnx` (if enabled in config)
+### 3) Результаты обучения
+- чекпоинты: `artifacts/checkpoints/*.ckpt`
+- графики: `plots/train_loss.png`, `plots/val_loss.png`, `plots/val_acc.png`
+- ONNX: `artifacts/model.onnx` (экспортируется автоматически из **лучшего checkpoint**)
+
+---
+
+## Метрики и MLflow
+
+### Консоль
+PyTorch Lightning печатает метрики по эпохам прямо в терминал (`train_loss`, `train_acc`, `val_loss`, `val_acc`).
+
+### Графики
+Генерируются в `plots/` автоматически callback’ом.
+
+### MLflow UI (локально)
+```bash
+poetry run mlflow ui --backend-store-uri "$(pwd)/mlruns" --port 8081
+```
+Открыть: `http://127.0.0.1:8081`
 
 ---
 
 ## Production preparation
 
-Export to ONNX (separate command):
+### ONNX
+ONNX экспортируется после обучения в:
+- `artifacts/model.onnx`
+
+Проверка:
 ```bash
-poetry run swc export_onnx
+poetry run python -c "import onnx; m=onnx.load('artifacts/model.onnx'); print('OK', m.graph.output[0].name)"
 ```
 
-Optional TensorRT conversion stub:
-```bash
-bash scripts/export_tensorrt.sh
-```
+### TensorRT (скрипт-заготовка)
+Есть скрипт:
+- `scripts/export_tensorrt.sh`
+
+(Требует установленного TensorRT/драйверов. В учебном проекте это “заготовка” под прод-пайплайн.)
 
 ---
 
 ## Infer
 
-Inference uses **ONNXRuntime** (minimal deps).
-
-Predict one image:
+### Инференс на одном изображении
 ```bash
-poetry run swc infer path/to/image.jpg
+poetry run swc infer data/examples/example_1_R2-D2.jpg
 ```
 
----
-
-## Inference server (MLflow Serving, max 5 points)
-
-Find `RUN_ID` in MLflow UI and run:
-```bash
-poetry run swc serve_mlflow <RUN_ID> 5000
+Пример вывода:
+```
+pred: R2-D2
+  R2-D2: 0.9998
+  BB-8: 0.0001
+  ...
 ```
 
-Example request:
-```bash
-curl -X POST -H "Content-Type: application/json" \
-  --data '{"instances":[{"image_path":"data/examples/example_1_*.jpg"}]}' \
-  http://127.0.0.1:5000/invocations
-```
+# Ссылки
+
+- Датасет:
+  - https://www.kaggle.com/datasets/mathurinache/star-wars-images/data
+- ResNet:
+  - https://pytorch.org/vision/stable/models/generated/torchvision.models.resnet18.html
