@@ -1,4 +1,4 @@
-# StarWarsCharacterClassifier
+# Star Wars character classifier
 
 **Камышанский Андрей**
 
