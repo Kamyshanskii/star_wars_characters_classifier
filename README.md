@@ -10,7 +10,7 @@
 
 ### Формат входных и выходных данных
 
-**Вход:** изображение (`.jpg/.jpeg/.png`).  
+**Вход:** изображение (`.jpg/.jpeg/.png`).
 **Выход:** имя класса (персонажа) и top-k вероятностей.
 
 ### Метрики
@@ -23,9 +23,10 @@
 ### Валидация
 
 Данные разбиваются на `train/val/test` в соотношении 80/10/10 с seed = 42.
+
 ### Данные
 
-Датасет: [star-wars-images](https://www.kaggle.com/datasets/mathurinache/star-wars-images/data).  
+Датасет: [star-wars-images](https://www.kaggle.com/datasets/mathurinache/star-wars-images/data).
 После скачивания и подготовки структура такая:
 
 - `data/raw/star_wars_images/<class_name>/*.jpg`
@@ -46,32 +47,37 @@
 
 ## Setup
 
-Разработка и тестирование проводились на Linux с GPU **GTX 1650**.  
+Разработка и тестирование проводились на Linux с GPU **GTX 1650**.
 Проект использует **Poetry**. Требуемая версия Python: **>=3.10,<3.13**.
 
 ### 1) Клонировать репозиторий
+
 ```bash
 git clone <Не забыть встаить ссылку как закину на github>
 cd star_wars_characters
 ```
 
 ### 2) Python
+
 ```bash
 conda create -n swc_py312 python=3.12 -y
 conda activate swc_py312
 ```
 
 ### 3) Установить зависимости
+
 ```bash
 poetry install --with train,dev
 ```
 
 Проверка:
+
 ```bash
 poetry run swc --help
 ```
 
 ### 4) Kaggle credentials (для скачивания датасета)
+
 Нужно положить `kaggle.json` в `~/.kaggle/`:
 
 ```bash
@@ -87,6 +93,7 @@ chmod 600 ~/.kaggle/kaggle.json
 ## Train
 
 ### 1) Скачать данные и подготовить сплиты
+
 ```bash
 poetry run swc download_data
 poetry run swc prepare_data
@@ -99,6 +106,7 @@ poetry run swc train mlflow.tracking_uri="file:./mlruns" train.device=gpu train.
 ```
 
 ### 3) Результаты обучения
+
 - чекпоинты: `artifacts/checkpoints/*.ckpt`
 - графики: `plots/train_loss.png`, `plots/val_loss.png`, `plots/val_acc.png`
 - ONNX: `artifacts/model.onnx` (экспортируется автоматически из **лучшего checkpoint**)
@@ -108,15 +116,19 @@ poetry run swc train mlflow.tracking_uri="file:./mlruns" train.device=gpu train.
 ## Метрики и MLflow
 
 ### Консоль
+
 PyTorch Lightning печатает метрики по эпохам прямо в терминал (`train_loss`, `train_acc`, `val_loss`, `val_acc`).
 
 ### Графики
+
 Генерируются в `plots/` автоматически callback’ом.
 
 ### MLflow UI (локально)
+
 ```bash
 poetry run mlflow ui --backend-store-uri "$(pwd)/mlruns" --port 8081
 ```
+
 Открыть: `http://127.0.0.1:8081`
 
 ---
@@ -124,16 +136,21 @@ poetry run mlflow ui --backend-store-uri "$(pwd)/mlruns" --port 8081
 ## Production preparation
 
 ### ONNX
+
 ONNX экспортируется после обучения в:
+
 - `artifacts/model.onnx`
 
 Проверка:
+
 ```bash
 poetry run python -c "import onnx; m=onnx.load('artifacts/model.onnx'); print('OK', m.graph.output[0].name)"
 ```
 
 ### TensorRT (скрипт-заготовка)
+
 Есть скрипт:
+
 - `scripts/export_tensorrt.sh`
 
 (Требует установленного TensorRT/драйверов. В учебном проекте это “заготовка” под прод-пайплайн.)
@@ -143,11 +160,13 @@ poetry run python -c "import onnx; m=onnx.load('artifacts/model.onnx'); print('O
 ## Infer
 
 ### Инференс на одном изображении
+
 ```bash
 poetry run swc infer data/examples/example_1_R2-D2.jpg
 ```
 
 Пример вывода:
+
 ```
 pred: R2-D2
   R2-D2: 0.9998
