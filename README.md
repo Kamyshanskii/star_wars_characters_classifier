@@ -147,14 +147,6 @@ ONNX экспортируется после обучения в:
 poetry run python -c "import onnx; m=onnx.load('artifacts/model.onnx'); print('OK', m.graph.output[0].name)"
 ```
 
-### TensorRT (скрипт-заготовка)
-
-Есть скрипт:
-
-- `scripts/export_tensorrt.sh`
-
-(Требует установленного TensorRT/драйверов. В учебном проекте это “заготовка” под прод-пайплайн.)
-
 ---
 
 ## Infer
