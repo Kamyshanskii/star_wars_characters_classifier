@@ -40,7 +40,7 @@
 ### Основная модель
 
 - Архитектура: **ResNet18** (pretrained ImageNet)
-- Обучение: fine-tune (замена “головы” под число классов)
+- Обучение: fine-tune
 - Фреймворк: **PyTorch Lightning**
 
 ---
