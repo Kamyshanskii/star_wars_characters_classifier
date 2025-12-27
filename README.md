@@ -39,7 +39,7 @@
 
 ### Основная модель
 
-- Архитектура: **ResNet18** (pretrained ImageNet)
+- Архитектура: **ResNet18**
 - Обучение: fine-tune
 - Фреймворк: **PyTorch Lightning**
 
@@ -53,7 +53,7 @@
 ### 1) Клонировать репозиторий
 
 ```bash
-git clone <Не забыть встаить ссылку как закину на github>
+git clone https://github.com/Kamyshanskii/star_wars_characters_classifier.git
 cd star_wars_characters
 ```
 
