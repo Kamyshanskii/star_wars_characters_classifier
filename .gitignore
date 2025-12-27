@@ -9,7 +9,7 @@ dist/
 .idea/
 .DS_Store
 
-data/
+/data/
 artifacts/
 plots/
 mlruns/

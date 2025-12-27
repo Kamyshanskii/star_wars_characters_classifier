@@ -1,0 +1,14 @@
+dataset:
+  kaggle_dataset: "mathurinache/star-wars-images"
+  raw_dir: "data/raw/star_wars_images"
+  splits_dir: "data/splits"
+  examples_dir: "data/examples"
+
+image_size: 224
+num_workers: 4
+seed: 42
+
+splits:
+  train: 0.8
+  val: 0.1
+  test: 0.1
